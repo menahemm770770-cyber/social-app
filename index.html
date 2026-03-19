@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>social-app</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .header-title {
+      color: #8b949e;
+      font-size: 13px;
+      margin: 0 auto;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+
+    .post-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .prompt-line {
+      color: #28c840;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .prompt-line span {
+      color: #8b949e;
+    }
+
+    textarea {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 10px;
+      resize: none;
+      height: 80px;
+      outline: none;
+      direction: rtl;
+    }
+
+    textarea:focus {
+      border-color: #28c840;
+    }
+
+    textarea::placeholder {
+      color: #8b949e55;
+    }
+
+    .post-btn {
+      margin-top: 10px;
+      background: #161b22;
+      color: #28c840;
+      border: 1px solid #28c84055;
+      border-radius: 4px;
+      padding: 8px 18px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+
+    .post-btn:hover {
+      background: #28c84015;
+      border-color: #28c840;
+    }
+
+    .posts-list { margin-top: 10px; }
+
+    .post-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .post-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .post-author { color: #28c840; font-size: 12px; }
+    .post-time   { color: #8b949e; font-size: 11px; }
+
+    .post-content {
+      color: #c9d1d9;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .post-content::before {
+      content: '> ';
+      color: #28c84066;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #30363d;
+    }
+
+    .action-btn {
+      background: none;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      color: #28c840;
+      border-color: #28c84055;
+      background: #28c84010;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: #28c840;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <span class="header-title">social-app — bash — 80x24</span>
+  </header>
+
+  <div class="container">
+
+    <div class="post-box">
+      <div class="prompt-line">menah@network:~$ <span>post --new</span></div>
+      <textarea id="postInput" placeholder="הקלד את הפוסט שלך..."></textarea>
+      <br>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+  <label style="color:#28c840;font-size:12px;border:1px solid #28c84044;padding:6px 12px;border-radius:4px;cursor:pointer;">
+    › תמונה
+    <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(this)">
+  </label>
+  <button class="post-btn" style="margin-top:0" onclick="addPost()">› ENTER — פרסם</button>
+</div>
+<div id="imagePreview" style="margin-top:8px"></div>
+    </div>
+
+    <div class="posts-list" id="postsList"></div>
+
+  </div>
+
+<script>
+async function loadPosts() {
+  const res = await fetch('/api/posts');
+  const posts = await res.json();
+  const list = document.getElementById('postsList');
+  list.innerHTML = '';
+  for (const post of posts) {
+    const likesRes = await fetch(`/api/posts/${post.id}/likes`);
+    const likesData = await likesRes.json();
+    const commentsRes = await fetch(`/api/posts/${post.id}/comments`);
+    const comments = await commentsRes.json();
+    const commentsHTML = comments.map(c => `
+      <div style="padding:6px 0;border-top:1px solid #21262d;font-size:11px">
+        <span style="color:#28c840">[${c.author}]</span>
+        <span style="color:#8b949e"> ${c.content}</span>
+      </div>
+    `).join('');
+    const time = new Date(post.created_at).toLocaleTimeString('he-IL', {hour: '2-digit', minute: '2-digit'});
+    list.insertAdjacentHTML('beforeend', `
+      <div class="post-card">
+        <div class="post-card-top">
+          <span class="post-author">[${post.author}@network]</span>
+          <span class="post-time">${time}</span>
+        </div>
+        <div class="post-content">${post.content}</div>
+${post.image ? `<img src="${post.image}" style="max-width:100%;border-radius:6px;margin-top:8px;border:1px solid #30363d;">` : ''}
+        <div class="post-actions">
+          <button class="action-btn ${likesData.liked ? 'liked' : ''}" onclick="toggleLike(${post.id}, this)">
+            ${likesData.liked ? '♥' : '♡'} [${likesData.count}]
+          </button>
+          <button class="action-btn" onclick="toggleComments(${post.id})">💬 [${comments.length}]</button>
+        </div>
+        <div id="comments-${post.id}" style="display:none;margin-top:10px">
+          ${commentsHTML}
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input id="comment-input-${post.id}" type="text" placeholder="כתוב תגובה..." style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-family:'Courier New',monospace;font-size:11px;padding:6px 10px;outline:none">
+            <button class="action-btn" onclick="addComment(${post.id})">שלח</button>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+}
+
+let selectedImage = '';
+
+function previewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedImage = e.target.result;
+    document.getElementById('imagePreview').innerHTML = `
+      <img src="${selectedImage}" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid #30363d;">
+      <div style="color:#8b949e;font-size:11px;margin-top:4px;cursor:pointer" onclick="clearImage()">✕ הסר תמונה</div>
+    `;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  selectedImage = '';
+  document.getElementById('imagePreview').innerHTML = '';
+  document.getElementById('imageInput').value = '';
+}
+
+async function addPost() {
+  const input = document.getElementById('postInput');
+  const text = input.value.trim();
+  if (!text && !selectedImage) return;
+  await fetch('/api/posts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: text, image: selectedImage })
+  });
+  input.value = '';
+  clearImage();
+  loadPosts();
+}
+async function checkAuth() {
+  const res = await fetch('/api/me');
+  const data = await res.json();
+
+  if (!data.user) {
+    window.location.href = '/login.html';
+  } else {
+    const header = document.querySelector('.header-title');
+
+    header.textContent = `${data.user.username}@network — bash — 80x24`;
+    header.style.cursor = 'pointer';
+    header.onclick = () => window.location.href = '/profile.html';
+
+    loadPosts();
+  }
+}
+
+checkAuth();
+
+
+function previewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedImage = e.target.result;
+    document.getElementById('imagePreview').innerHTML = `
+      <img src="${selectedImage}" style="max-width:100%;max-height:200px;border-radius:6px;border:1px solid #30363d;">
+      <div style="color:#8b949e;font-size:11px;margin-top:4px;cursor:pointer" onclick="clearImage()">✕ הסר תמונה</div>
+    `;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  selectedImage = '';
+  document.getElementById('imagePreview').innerHTML = '';
+  document.getElementById('imageInput').value = '';
+}
+async function toggleLike(postId, btn) {
+  await fetch(`/api/posts/${postId}/like`, {
+    method: 'POST'
+  });
+
+  loadPosts();
+}
+
+function toggleComments(postId) {
+  const div = document.getElementById(`comments-${postId}`);
+  div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addComment(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const content = input.value.trim();
+  if (!content) return;
+
+  await fetch(`/api/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  });
+
+  loadPosts();
+}
+</script>

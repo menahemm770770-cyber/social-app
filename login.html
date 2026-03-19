@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>כניסה — social-app</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .window {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      width: 420px;
+      overflow: hidden;
+    }
+    .titlebar {
+      background: #1c2128;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #30363d;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .titlebar span { color: #8b949e; font-size: 12px; margin: 0 auto; }
+    .content { padding: 30px; }
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #30363d;
+    }
+    .tab {
+      padding: 8px 20px;
+      cursor: pointer;
+      color: #8b949e;
+      font-size: 13px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      color: #28c840;
+      border-bottom: 2px solid #28c840;
+    }
+    .form { display: none; }
+    .form.active { display: block; }
+    .prompt {
+      color: #28c840;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      color: #8b949e;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .field input:focus { border-color: #28c840; }
+    .btn {
+      width: 100%;
+      background: #28c84015;
+      color: #28c840;
+      border: 1px solid #28c84055;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn:hover { background: #28c84030; border-color: #28c840; }
+    .message {
+      margin-top: 14px;
+      font-size: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .message.error { color: #f85149; }
+    .message.success { color: #28c840; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span>auth — social-app</span>
+    </div>
+    <div class="content">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">› התחברות</div>
+        <div class="tab" onclick="switchTab('register')">› הרשמה</div>
+      </div>
+
+      <div class="form active" id="login-form">
+        <div class="prompt">menah@network:~$ login --user</div>
+        <div class="field">
+          <label>// שם משתמש</label>
+          <input type="text" id="login-username" placeholder="הכנס שם משתמש">
+        </div>
+        <div class="field">
+          <label>// סיסמה</label>
+          <input type="password" id="login-password" placeholder="הכנס סיסמה">
+        </div>
+        <button class="btn" onclick="login()">› ENTER — התחבר</button>
+        <div class="message" id="login-msg"></div>
+      </div>
+
+      <div class="form" id="register-form">
+        <div class="prompt">menah@network:~$ register --new-user</div>
+        <div class="field">
+          <label>// שם משתמש</label>
+          <input type="text" id="reg-username" placeholder="בחר שם משתמש">
+        </div>
+        <div class="field">
+          <label>// סיסמה</label>
+          <input type="password" id="reg-password" placeholder="בחר סיסמה">
+        </div>
+        <button class="btn" onclick="register()">› ENTER — הירשם</button>
+        <div class="message" id="reg-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+      if (tab === 'login') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('login-form').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('register-form').classList.add('active');
+      }
+    }
+
+    async function login() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const msg = document.getElementById('login-msg');
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        msg.className = 'message success';
+        msg.textContent = '✓ מחובר! מעביר...';
+        setTimeout(() => window.location.href = '/index.html', 1000);
+      } else {
+        msg.className = 'message error';
+        msg.textContent = '✗ ' + data.error;
+      }
+    }
+
+    async function register() {
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const msg = document.getElementById('reg-msg');
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        msg.className = 'message success';
+        msg.textContent = '✓ נרשמת! עכשיו התחבר...';
+        setTimeout(() => switchTab('login'), 1500);
+      } else {
+        msg.className = 'message error';
+        msg.textContent = '✗ ' + data.error;
+      }
+    }
+  </script>
+</body>
+</html>
